@@ -25,14 +25,10 @@ local state = {
     offset = 0,
     rows = rows,
     cols = cols,
-    file_name = arg[2],
+    file_name = arg[1],
     mode = mode.Normal,
     insert_buffer = "",
 }
-
-for k, v in pairs(orig_termios) do
-    print(k, v)
-end
 
 local function buffer_from_file(file_name)
     local buffer = {
@@ -176,7 +172,11 @@ local function update_screen(buffer)
     io.flush()
 end
 
-local buffer = buffer_from_file("test.txt")
+if #arg ~= 1 then
+    error("please provide a single file name as an argument")
+    os.exit(1)
+end
+local buffer = buffer_from_file(state.file_name)
 enable_raw_mode()
 clear_screen()
 update_screen(buffer)
