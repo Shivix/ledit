@@ -17,6 +17,7 @@ local state = {
     file_name = arg[1],
     mode = mode.Normal,
     insert_buffer = "",
+    message_queue = {},
 }
 
 local pos = {
@@ -61,10 +62,6 @@ local function move_cursor(x, y)
     io.write("\x1b[" .. y .. ";" .. x .. "H")
 end
 
-local function clear_screen()
-    io.write("\27[2J")
-end
-
 local function draw_empty_space(offset)
     if offset > state.rows then
         return
@@ -79,18 +76,23 @@ end
 
 local function draw_status_line()
     move_cursor(0, state.rows)
+    term.clear_line()
+    if #state.message_queue > 0 then
+        io.write(table.remove(state.message_queue, #state.message_queue))
+        return
+    end
+
     local status_line =
         string.format(" Normal | %s | %d:%d ", state.file_name, state.cursor_y, state.cursor_x)
     io.write(status_line)
 end
 
 local function draw_message(msg)
-    move_cursor(0, state.rows)
-    io.write(msg)
+    table.insert(state.message_queue, msg)
 end
 
 local function draw_buffer(buffer)
-    clear_screen()
+    term.clear_screen()
     move_cursor(0, 0)
     local max_lines = state.rows
     if #buffer < state.rows then
@@ -204,11 +206,11 @@ if #arg ~= 1 then
 end
 local buffer = buffer_from_file(state.file_name)
 term.enable_raw_mode()
-clear_screen()
+term.clear_screen()
 draw_empty_space(#buffer)
 draw_buffer(buffer)
 while handle_keypress(buffer) do
     update_screen()
 end
-clear_screen()
+term.clear_screen()
 term.disable_raw_mode()

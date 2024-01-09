@@ -31,4 +31,12 @@ function M.read_keypress()
     return posix.read(0, 1)
 end
 
+function M.clear_screen()
+    io.write("\27[2J")
+end
+
+function M.clear_line()
+    io.write("\27[2K")
+end
+
 return M
