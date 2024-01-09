@@ -1,5 +1,5 @@
 local hl = require("highlight")
-local term = require("term")
+local term = require("terminal")
 
 local mode = {
     Normal = 0,
@@ -168,7 +168,10 @@ local function handle_keypress(buffer)
         return false
     end
 
-    normal_keymap[c](buffer)
+    local func = normal_keymap[c]
+    if func then
+        func()
+    end
     return true
 end
 

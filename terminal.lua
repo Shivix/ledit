@@ -4,7 +4,7 @@ local M = {}
 
 local STDIN = 0
 local orig_termios = assert(posix.tcgetattr(0))
-
+print("test")
 function M.get_window_size()
     local handle = assert(io.popen("stty size", "r"))
     local result = handle:read("*a")
