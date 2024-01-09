@@ -23,12 +23,21 @@ local pos = {
     top = 0,
     -- - 1 for status line
     bottom = state.rows - 1,
-    current_line = function() return state.cursor_y + 1 end
+    current_line = function()
+        return state.cursor_y + 1
+    end,
 }
 
+local function write_buffer(buffer)
+    local file = assert(io.open(state.file_name, "w"))
+    for _, line in ipairs(buffer) do
+        file:write(line, "\n")
+    end
+    file:close()
+end
+
 local function buffer_from_file(file_name)
-    local buffer = {
-    }
+    local buffer = {}
 
     local file = assert(io.open(file_name, "r"))
 
@@ -42,7 +51,9 @@ end
 
 local function insert_line(buffer)
     local line = buffer[pos.current_line()]
-    buffer[pos.current_line()] = line:sub(1, state.cursor_x - 1) .. state.insert_buffer .. line:sub(state.cursor_x)
+    buffer[pos.current_line()] = line:sub(1, state.cursor_x - 1)
+        .. state.insert_buffer
+        .. line:sub(state.cursor_x)
     state.insert_buffer = ""
 end
 
@@ -73,6 +84,11 @@ local function draw_status_line()
     io.write(status_line)
 end
 
+local function draw_message(msg)
+    move_cursor(0, state.rows)
+    io.write(msg)
+end
+
 local function draw_buffer(buffer)
     clear_screen()
     move_cursor(0, 0)
@@ -84,17 +100,16 @@ local function draw_buffer(buffer)
     for i = state.offset + 1, max_lines + state.offset do
         a = a + 1
         move_cursor(0, a)
-        io.write(hl.highlight_syntax(buffer[i]).."\n")
+        io.write(hl.highlight_syntax(buffer[i]) .. "\n")
     end
 end
 
 local function draw_current_line(buffer)
     move_cursor(0, state.cursor_y)
     local line = buffer[pos.current_line()]
-    io.write(hl.highlight_syntax(line).."\n")
+    io.write(hl.highlight_syntax(line) .. "\n")
 end
 
--- TODO: allow overriding table in config
 local normal_keymap = {
     ["h"] = function()
         if state.cursor_x > 0 then
@@ -146,7 +161,9 @@ local normal_keymap = {
         buffer[pos.current_line()] = line:sub(1, state.cursor_x - 1) .. line:sub(state.cursor_x + 1)
         draw_buffer(buffer)
     end,
-    ["w"] = function()
+    ["w"] = function(buffer)
+        write_buffer(buffer)
+        draw_message(state.file_name .. " written!")
     end,
 }
 
@@ -160,7 +177,7 @@ local function handle_keypress(buffer)
             state.mode = mode.Normal
             return true
         end
-        state.insert_buffer = state.insert_buffer..c
+        state.insert_buffer = state.insert_buffer .. c
         return true
     end
 
@@ -170,7 +187,7 @@ local function handle_keypress(buffer)
 
     local func = normal_keymap[c]
     if func then
-        func()
+        func(buffer)
     end
     return true
 end
