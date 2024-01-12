@@ -94,12 +94,12 @@ end
 local function draw_buffer(buffer)
     term.clear_screen()
     move_cursor(0, 0)
-    local max_lines = state.rows
-    if #buffer < state.rows then
+    local max_lines = state.rows + state.offset
+    if #buffer < state.rows + state.offset then
         max_lines = #buffer
     end
     local a = 0
-    for i = state.offset + 1, max_lines + state.offset do
+    for i = state.offset + 1, max_lines do
         a = a + 1
         move_cursor(0, a)
         io.write(hl.highlight_syntax(buffer[i]) .. "\n")
@@ -112,6 +112,12 @@ local function draw_current_line(buffer)
     io.write(hl.highlight_syntax(line) .. "\n")
 end
 
+local ctrl = {
+    d = string.char(4),
+    o = string.char(15),
+    u = string.char(21),
+}
+
 local normal_keymap = {
     ["h"] = function()
         if state.cursor_x > 0 then
@@ -121,7 +127,7 @@ local normal_keymap = {
     ["j"] = function(buffer)
         if state.cursor_y ~= pos.bottom then
             state.cursor_y = state.cursor_y + 1
-        elseif state.offset ~= state.cols then
+        elseif state.offset ~= #buffer - 1 then
             state.offset = state.offset + 1
             draw_buffer(buffer)
         end
@@ -139,20 +145,28 @@ local normal_keymap = {
             state.cursor_x = state.cursor_x + 1
         end
     end,
-    ["d"] = function()
+    [ctrl.d] = function(buffer)
         local half_height = math.floor(state.rows / 2)
-        if state.cursor_y + half_height > state.rows then
-            state.cursor_y = pos.bottom
-        else
+        if state.cursor_y + half_height < state.rows then
             state.cursor_y = state.cursor_y + half_height
+        elseif state.offset + half_height < #buffer - 1 then
+            state.offset = state.offset + half_height
+            draw_buffer(buffer)
+            state.cursor_y = pos.bottom
         end
     end,
-    ["u"] = function()
+    [ctrl.u] = function(buffer)
         local half_height = math.floor(state.rows / 2)
         if state.cursor_y >= half_height then
             state.cursor_y = state.cursor_y - half_height
+        elseif state.offset > half_height then
+            state.offset = state.offset - half_height
+            draw_buffer(buffer)
+            state.cursor_y = pos.top
         else
-            state.cursor_y = 0
+            state.offset = 0
+            draw_buffer(buffer)
+            state.cursor_y = pos.top
         end
     end,
     ["i"] = function()
@@ -173,7 +187,7 @@ local function handle_keypress(buffer)
     local c = term.read_keypress()
 
     if state.mode == mode.Insert then
-        if c == "o" then
+        if c == ctrl.o then
             insert_line(buffer)
             draw_current_line(buffer)
             state.mode = mode.Normal
@@ -200,6 +214,8 @@ local function update_screen()
     io.flush()
 end
 
+-- TODO: first or second line not drawn
+-- TODO: insert line breaks after scrolling
 if #arg ~= 1 then
     error("please provide a single file name as an argument")
     os.exit(1)
