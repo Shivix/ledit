@@ -25,7 +25,7 @@ local pos = {
     -- - 1 for status line
     bottom = state.rows - 1,
     current_line = function()
-        return state.cursor_y + 1
+        return state.cursor_y + state.offset
     end,
 }
 
@@ -102,14 +102,14 @@ local function draw_buffer(buffer)
     for i = state.offset + 1, max_lines do
         a = a + 1
         move_cursor(0, a)
-        io.write(hl.highlight_syntax(buffer[i]) .. "\n")
+        io.write(hl.highlight_syntax(buffer[i]))
     end
 end
 
 local function draw_current_line(buffer)
     move_cursor(0, state.cursor_y)
     local line = buffer[pos.current_line()]
-    io.write(hl.highlight_syntax(line) .. "\n")
+    io.write(hl.highlight_syntax(line))
 end
 
 local ctrl = {
@@ -214,8 +214,6 @@ local function update_screen()
     io.flush()
 end
 
--- TODO: first or second line not drawn
--- TODO: insert line breaks after scrolling
 if #arg ~= 1 then
     error("please provide a single file name as an argument")
     os.exit(1)
