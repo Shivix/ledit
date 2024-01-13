@@ -9,8 +9,8 @@ local mode = {
 local rows, cols = term.get_window_size()
 
 local state = {
-    cursor_x = 0,
-    cursor_y = 0,
+    cursor_x = 1,
+    cursor_y = 1,
     offset = 0,
     rows = rows,
     cols = cols,
@@ -116,6 +116,7 @@ local ctrl = {
     d = string.char(4),
     o = string.char(15),
     u = string.char(21),
+    w = string.char(23),
 }
 
 local normal_keymap = {
@@ -133,7 +134,7 @@ local normal_keymap = {
         end
     end,
     ["k"] = function(buffer)
-        if state.cursor_y ~= 0 then
+        if state.cursor_y ~= 1 then
             state.cursor_y = state.cursor_y - 1
         elseif state.offset ~= 0 then
             state.offset = state.offset - 1
@@ -169,6 +170,27 @@ local normal_keymap = {
             state.cursor_y = pos.top
         end
     end,
+    ["w"] = function(buffer)
+        local line = buffer[pos.current_line()]
+        local begin = line:find("%f[%w+]", state.cursor_x + 1)
+        if begin then
+            state.cursor_x = begin
+        end
+    end,
+    ["e"] = function(buffer)
+        local line = buffer[pos.current_line()]
+        local begin = line:find("%s", state.cursor_x + 1)
+        if begin then
+            state.cursor_x = begin - 1
+        end
+    end,
+    ["b"] = function(buffer)
+        local line = string.reverse(buffer[pos.current_line()])
+        local begin = line:find("%s", #line - state.cursor_x + 1)
+        if begin then
+            state.cursor_x = #line - begin + 2
+        end
+    end,
     ["i"] = function()
         state.mode = mode.Insert
     end,
@@ -177,7 +199,7 @@ local normal_keymap = {
         buffer[pos.current_line()] = line:sub(1, state.cursor_x - 1) .. line:sub(state.cursor_x + 1)
         draw_buffer(buffer)
     end,
-    ["w"] = function(buffer)
+    [ctrl.w] = function(buffer)
         write_buffer(buffer)
         draw_message(state.file_name .. " written!")
     end,
